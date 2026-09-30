@@ -9,7 +9,8 @@ include_directories(include)
 add_library(scratch_ml STATIC
         src/supervised/ID3.cpp
         include/scratch_ml/supervised/DecisionTree.hpp
-        include/scratch_ml/core/matrix.hpp)
+        include/scratch_ml/core/matrix.hpp
+        include/scratch_ml/supervised/ID3.hpp)
 
 target_include_directories(scratch_ml PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

@@ -20,7 +20,7 @@ private:
     DataSet data;
     std::unique_ptr<Node> root;
 
-    std::vector<std::unordered_map<int, std::string>> featureValue;
+    std::vector<std::unordered_map<std::string, int>> featureValue;
 
     void id3Recursive(const std::vector<int>& activeRows,
                 const std::vector<int>& availableFeatures);
