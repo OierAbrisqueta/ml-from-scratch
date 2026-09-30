@@ -5,6 +5,13 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <scratch_ml/core/matrix.hpp>
+
+struct DataSet {
+    Matrix X;
+    std::vector<std::string> y;
+    std::vector<std::string> features;
+};
 
 class DecisionTree {
 public:
