@@ -2,6 +2,7 @@
 #include <scratch_ml/supervised/ID3.hpp>
 #include <scratch_ml/core/matrix.hpp>
 #include <cmath>
+#include <numeric>
 
 void ID3::fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) {
     size_t nRows= xTrain.size();
@@ -28,10 +29,10 @@ void ID3::fit(const std::vector<std::vector<std::string>>& xTrain, const std::ve
     data.y = yTrain;
 
     std::vector<int> activeRows(nRows);
-    std::ranges::iota(activeRows.begin(), activeRows.end(), 0);
+    std::iota(activeRows.begin(), activeRows.end(), 0);
 
     std::vector<int> activeFeatures(nCols);
-    std::ranges::iota(activeFeatures.begin(), activeFeatures.end(), 0);
+    std::iota(activeFeatures.begin(), activeFeatures.end(), 0);
 
     root = id3Recursive(activeRows, activeFeatures);
 }
@@ -77,6 +78,29 @@ std::unique_ptr<ID3::Node> ID3::id3Recursive(const std::vector<int>& activeRows,
         leafNode->predictedClass = mode;
         return leafNode;
     }
+
+    int bestSplit = getFeatureMaxInformationGain(activeRows, availableFeatures);
+    auto node = std::make_unique<Node>();
+    node->isLeaf = false;
+    node->value = bestSplit;
+
+    std::vector<int> remainingFeatures = availableFeatures;
+    std::erase(remainingFeatures, bestSplit);
+
+    std::unordered_map<int, std::vector<int>> branches;
+    for (size_t i{0uz}; i < activeRows.size(); i++) {
+        int rowIndex = activeRows[i];
+        int featureValue = data.X(rowIndex, bestSplit);
+        branches[featureValue].push_back(rowIndex);
+    }
+
+    for (const auto& branch : branches) {
+        int uniqueFeatureValue = branch.first;
+        const std::vector<int>& childRows = branch.second;
+        node->childrenNodes[uniqueFeatureValue] = id3Recursive(childRows, remainingFeatures);
+    }
+
+    return node;
 }
 
 int ID3::getFeatureMaxInformationGain(const std::vector<int>& activeRows,
