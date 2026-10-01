@@ -1,6 +1,7 @@
 #include <bits/ranges_algo.h>
 #include <scratch_ml/supervised/ID3.hpp>
 #include <scratch_ml/core/matrix.hpp>
+#include <cmath>
 
 void ID3::fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) {
     size_t nRows= xTrain.size();
@@ -76,4 +77,55 @@ std::unique_ptr<ID3::Node> ID3::id3Recursive(const std::vector<int>& activeRows,
         leafNode->predictedClass = mode;
         return leafNode;
     }
+}
+
+int ID3::getFeatureMaxInformationGain(const std::vector<int>& activeRows,
+                const std::vector<int>& availableFeatures) {
+    double maxInformationGain = -1.0;
+    int maxFeature = -1;
+    for (int feature: availableFeatures) {
+        double currentInformationGain = getInformationGain(feature, activeRows);
+        if (currentInformationGain > maxInformationGain) {
+            maxFeature = feature;
+            maxInformationGain = currentInformationGain;
+        }
+    }
+
+    return maxFeature;
+}
+
+double ID3::getInformationGain(int feature, const std::vector<int>& activeRows) {
+    double entropy = getEntropy(activeRows);
+
+    std::unordered_map<int, std::vector<int>> subsets;
+    for (auto i{0uz}; i < activeRows.size(); i++) {
+        int rowIndex = activeRows[i];
+        int currentFeatureValue = data.X(rowIndex, feature);
+        subsets[currentFeatureValue].push_back((rowIndex));
+    }
+
+    double conditionalEntropy = 0.0;
+    for (const auto& entry : subsets) {
+        double weight = (double) entry.second.size() / (double) activeRows.size();
+        double entropySubset = getEntropy(entry.second);
+        conditionalEntropy += weight * entropySubset;
+    }
+
+    return entropy - conditionalEntropy;
+}
+
+double ID3::getEntropy(const std::vector<int>& activeRows) {
+    std::unordered_map<std::string, int> frequencies;
+    for (auto i{0uz}; i < activeRows.size(); i++) {
+        std::string current = data.y[activeRows[i]];
+        frequencies[current]++;
+    }
+
+    double entropy = 0.0;
+    for (const auto& entry : frequencies) {
+        double pi = (double)entry.second / (double)activeRows.size();
+        entropy -= (pi * std::log2(pi));
+    }
+
+    return entropy;
 }
