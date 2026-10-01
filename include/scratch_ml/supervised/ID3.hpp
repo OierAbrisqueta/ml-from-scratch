@@ -22,7 +22,7 @@ private:
 
     std::vector<std::unordered_map<std::string, int>> featureValue;
 
-    void id3Recursive(const std::vector<int>& activeRows,
+    std::unique_ptr<Node> id3Recursive(const std::vector<int>& activeRows,
                 const std::vector<int>& availableFeatures);
     double getEntropy(const std::vector<int>& activeRows);
     double getInformationGain(int feature, const std::vector<int>& activeRows);
