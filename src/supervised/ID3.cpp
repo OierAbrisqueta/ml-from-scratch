@@ -90,8 +90,8 @@ std::unique_ptr<ID3::Node> ID3::id3Recursive(const std::vector<int>& activeRows,
     std::unordered_map<int, std::vector<int>> branches;
     for (size_t i{0uz}; i < activeRows.size(); i++) {
         int rowIndex = activeRows[i];
-        int featureValue = data.X(rowIndex, bestSplit);
-        branches[featureValue].push_back(rowIndex);
+        int featureVal = data.X(rowIndex, bestSplit);
+        branches[featureVal].push_back(rowIndex);
     }
 
     for (const auto& branch : branches) {
@@ -152,4 +152,39 @@ double ID3::getEntropy(const std::vector<int>& activeRows) {
     }
 
     return entropy;
+}
+
+std::vector<std::string> ID3::predict(const std::vector<std::vector<std::string>>& xTrain) const {
+    std::vector<std::string> predictions;
+    bool predictionFound = true;
+
+    for (auto i{0uz}; i < xTrain.size(); i++) {
+        Node* currentNode = root.get();
+
+        while (!currentNode->isLeaf) {
+            int value = currentNode->value;
+            const std::string& prediction = xTrain[i][value];
+
+            if (!featureValue[value].contains(prediction)) {
+                predictionFound = false;
+                break;
+            }
+
+            int predictionValue = featureValue[value].at(prediction);
+            if (!currentNode->childrenNodes.contains(predictionValue)) {
+                predictionFound = false;
+                break;
+            }
+
+            currentNode = currentNode->childrenNodes.at(predictionValue).get();
+        }
+        if (predictionFound) {
+            predictions.push_back(currentNode->predictedClass);
+        } else {
+            predictions.push_back("Unknown");
+        }
+
+    }
+
+    return predictions;
 }
