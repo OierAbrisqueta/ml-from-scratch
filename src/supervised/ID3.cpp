@@ -1,4 +1,4 @@
-#include <bits/ranges_algo.h>
+#include <algorithm>
 #include <scratch_ml/supervised/ID3.hpp>
 #include <scratch_ml/core/matrix.hpp>
 #include <cmath>
