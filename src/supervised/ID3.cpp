@@ -156,10 +156,10 @@ double ID3::getEntropy(const std::vector<int>& activeRows) {
 
 std::vector<std::string> ID3::predict(const std::vector<std::vector<std::string>>& xTrain) const {
     std::vector<std::string> predictions;
-    bool predictionFound = true;
 
     for (auto i{0uz}; i < xTrain.size(); i++) {
         Node* currentNode = root.get();
+        bool predictionFound = true;
 
         while (!currentNode->isLeaf) {
             int value = currentNode->value;

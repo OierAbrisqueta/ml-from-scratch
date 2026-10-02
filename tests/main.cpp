@@ -29,7 +29,9 @@ int main(void) {
         {"Sunny", "Cool", "Normal", "Strong"},
 
         // Edge Case: Contains unseen category. Should return unknown.
-        {"Rain", "Mild", "High", "Hurricane"}
+        {"Rain", "Mild", "High", "Hurricane"},
+
+        {"Sunny", "Hot", "High", "Weak"},
     };
 
     std::vector<std::string> predictions = decisionTree.predict(xTest);
