@@ -32,6 +32,40 @@ void CART::fit(const std::vector<std::vector<std::string>>& xTrain, const std::v
     this->root = buildTreeRecursive(activeRows);
 }
 
+std::vector<std::string> CART::predict(const std::vector<std::vector<std::string>>& xTrain) const {
+    std::vector<std::string> predictions;
+
+    for (auto i{0uz}; i < xTrain.size(); i++) {
+        Node* currentNode = root.get();
+        bool predictionFound = true;
+
+        while (!currentNode->isLeaf) {
+            int currentFeature = currentNode->splitFeature;
+            const std::string& categoryStr = xTrain[i][currentFeature];
+
+            if (!featureValue[currentFeature].contains(categoryStr)) {
+                predictionFound = false;
+                break;
+            }
+
+            int categoryInt = featureValue[currentFeature].at(categoryStr);
+            if (currentNode->splitValue == categoryInt) {
+                currentNode = currentNode->left.get();
+            } else {
+                currentNode = currentNode->right.get();
+            }
+        }
+        if (predictionFound) {
+            predictions.push_back(currentNode->predictedClass);
+        } else {
+            predictions.push_back("Unknown");
+        }
+
+    }
+
+    return predictions;
+}
+
 std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& activeRows) {
     //Base Case 1
     std::string value = data.y[activeRows[0]];
@@ -80,7 +114,7 @@ std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& act
     splitData(activeRows, bestFeature, bestValue, leftNodes, rightNodes);
 
     //If split concluded in no meaningful split
-    if (rightNodes.empty() | leftNodes.empty()) {
+    if (rightNodes.empty() || leftNodes.empty()) {
         std::unordered_map<std::string, int> frequencies;
         for (auto i{0uz}; i < activeRows.size(); i++) {
             frequencies[data.y[activeRows[i]]]++;
@@ -129,20 +163,21 @@ double CART::getGiniImpurity(const std::vector<int>& activeRows) const {
 void CART::splitData(const std::vector<int>& activeRows, int feature, int value,
                 std::vector<int>& leftRows, std::vector<int>& rightRows) {
     for (int i = 0; i < activeRows.size(); i++) {
-        int valueFeature = data.X(i, feature);
+        int realRow = activeRows[i];
+        int valueFeature = data.X(realRow, feature);
         if (value == valueFeature) {
-            leftRows.push_back(i);
+            leftRows.push_back(realRow);
         } else {
-            rightRows.push_back(i);
+            rightRows.push_back(realRow);
         }
     }
 }
 
 void CART::getBestSplit(const std::vector<int>& activeRows, int& bestFeature, int& bestValue) {
     double lowestImpurity = 1.1;
-    for (int i = 0; i < data.features.size(); i++) {
+    for (int i = 0; i < data.X.getNumberColumns(); i++) {
         std::unordered_set<int> uniqueValues;
-        for (size_t j{0uz}; j < activeRows.size(); i++) {
+        for (size_t j{0uz}; j < activeRows.size(); j++) {
             int row = activeRows[j];
             int value = data.X(row, i);
             uniqueValues.insert(value);
@@ -155,7 +190,7 @@ void CART::getBestSplit(const std::vector<int>& activeRows, int& bestFeature, in
             double giniLeft = getGiniImpurity(left);
             double giniRight = getGiniImpurity(right);
             double weightedGini = (static_cast<double>(left.size())/static_cast<double>(activeRows.size())) * giniLeft + (static_cast<double>(right.size())/static_cast<double>(activeRows.size())) * giniRight;
-            if (lowestImpurity < weightedGini) {
+            if (lowestImpurity > weightedGini) {
                 lowestImpurity = weightedGini;
                 bestFeature = i;
                 bestValue = candidate;

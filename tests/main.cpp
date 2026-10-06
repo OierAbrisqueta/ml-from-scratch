@@ -1,6 +1,6 @@
 #include <iostream>
 #include <scratch_ml/supervised/ID3.hpp>
-#include <iostream>
+#include <scratch_ml/supervised/CART.hpp>
 
 int main(void) {
     std::vector<std::vector<std::string>> xTrain = {
@@ -18,8 +18,8 @@ int main(void) {
         "No", "No", "Yes", "Yes", "Yes", "No", "Yes", "No"
     };
 
-    ID3 decisionTree;
-    decisionTree.fit(xTrain, yTrain);
+    ID3 id3DecisionTree;
+    id3DecisionTree.fit(xTrain, yTrain);
 
     std::vector<std::vector<std::string>> xTest = {
         // Was trained with this combination. Should predict NO.
@@ -34,10 +34,21 @@ int main(void) {
         {"Sunny", "Hot", "High", "Weak"},
     };
 
-    std::vector<std::string> predictions = decisionTree.predict(xTest);
+    std::vector<std::string> predictionsID3 = id3DecisionTree.predict(xTest);
 
-    for (auto i{0uz}; i < predictions.size(); i++) {
-        std::cout << "Prediction made for combination in row " << i << ": " << predictions[i] << std::endl;
+    std::cout << "----- ID3 CLASSIFICATION ALGORITHM -----" << std::endl;
+    for (auto i{0uz}; i < predictionsID3.size(); i++) {
+        std::cout << "Prediction made for combination in row " << i << ": " << predictionsID3[i] << std::endl;
+    }
+
+    CART cartDecisionTree;
+    cartDecisionTree.fit(xTrain, yTrain);
+
+    std::vector<std::string> predictionsCART = cartDecisionTree.predict(xTest);
+
+    std::cout << "----- CART CLASSIFICATION ALGORITHM -----" << std::endl;
+    for (auto i{0uz}; i < predictionsCART.size(); i++) {
+        std::cout << "Prediction made for combination in row " << i << ": " << predictionsCART[i] << std::endl;
     }
 
     return 0;
