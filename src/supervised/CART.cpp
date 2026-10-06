@@ -1,6 +1,84 @@
 #include <scratch_ml/supervised/CART.hpp>
 #include <unordered_set>
 
+std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& activeRows) {
+    //Base Case 1
+    std::string value = data.y[activeRows[0]];
+    bool areSame = true;
+    for (auto i{0uz}; i < activeRows.size(); i++) {
+        if (data.y[activeRows[i]] != value) {
+            areSame = false;
+            break;
+        }
+    }
+    if (areSame) {
+        auto leafNode = std::make_unique<Node>();
+        leafNode->isLeaf = true;
+        leafNode->predictedClass = value;
+        return leafNode;
+    }
+
+    int bestFeature = -1;
+    int bestValue = -1;
+    getBestSplit(activeRows, bestFeature, bestValue);
+
+    //Base Case 2
+    if (bestFeature == -1) {
+        std::unordered_map<std::string, int> frequencies;
+        for (auto i{0uz}; i < activeRows.size(); i++) {
+            frequencies[data.y[activeRows[i]]]++;
+        }
+
+        std::string mostCommon;
+        int maxFreq = -1;
+        for (const auto freq : frequencies) {
+            if (freq.second > maxFreq) {
+                mostCommon = freq.first;
+                maxFreq = freq.second;
+            }
+        }
+
+        auto leafNode = std::make_unique<Node>();
+        leafNode->isLeaf = true;
+        leafNode->predictedClass = mostCommon;
+        return leafNode;
+    }
+
+    std::vector<int> leftNodes;
+    std::vector<int> rightNodes;
+    splitData(activeRows, bestFeature, bestValue, leftNodes, rightNodes);
+
+    //If split concluded in no meaningful split
+    if (rightNodes.empty() | leftNodes.empty()) {
+        std::unordered_map<std::string, int> frequencies;
+        for (auto i{0uz}; i < activeRows.size(); i++) {
+            frequencies[data.y[activeRows[i]]]++;
+        }
+
+        std::string mostCommon;
+        int maxFreq = -1;
+        for (const auto freq : frequencies) {
+            if (freq.second > maxFreq) {
+                mostCommon = freq.first;
+                maxFreq = freq.second;
+            }
+        }
+
+        auto leafNode = std::make_unique<Node>();
+        leafNode->isLeaf = true;
+        leafNode->predictedClass = mostCommon;
+        return leafNode;
+    }
+
+    auto node = std::make_unique<Node>();
+    node->isLeaf = false;
+    node->left = buildTreeRecursive(leftNodes);
+    node ->right = buildTreeRecursive(rightNodes);
+    node->splitFeature = bestFeature;
+    node->splitValue = bestValue;
+    return node;
+}
+
 double CART::getGiniImpurity(const std::vector<int>& activeRows) const {
     std::unordered_map<std::string, int> frequencies;
     for (size_t i{0uz}; i < activeRows.size(); i++) {
