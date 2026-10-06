@@ -27,7 +27,7 @@ private:
     std::vector<std::unordered_map<std::string, int>> featureValue;
 
     std::unique_ptr<Node> buildTreeRecursive(const std::vector<int>& activeRows);
-    double getGiniImpurity(const std::vector<int>& activeRows);
+    double getGiniImpurity(const std::vector<int>& activeRows) const;
     void getBestSplit(const std::vector<int>& activeRows, int& bestFeature, int& bestValue);
     void splitData(const std::vector<int>& activeRows, int feature, int value,
                     std::vector<int>& leftRows, std::vector<int>& rightRows);
