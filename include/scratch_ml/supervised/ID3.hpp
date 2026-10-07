@@ -1,8 +1,10 @@
 #ifndef ML_FROM_SCRATCH_ID3_HPP
 #define ML_FROM_SCRATCH_ID3_HPP
-#include "DecisionTree.hpp"
+#include "Classifier.hpp"
+#include <unordered_map>
+#include <memory>
 
-class ID3: public DecisionTree {
+class ID3: public Classifier {
 public:
     ID3() = default;
 

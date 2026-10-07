@@ -1,9 +1,11 @@
 #ifndef ML_FROM_SCRATCH_CART_HPP
 #define ML_FROM_SCRATCH_CART_HPP
 #include <vector>
-#include <scratch_ml/supervised/DecisionTree.hpp>
+#include <scratch_ml/supervised/Classifier.hpp>
+#include <unordered_map>
+#include <memory>
 
-class CART: public DecisionTree {
+class CART: public Classifier {
 public:
     CART() = default;
 
