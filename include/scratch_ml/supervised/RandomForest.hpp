@@ -10,7 +10,7 @@ public:
     RandomForest(std::size_t numTrees, std::size_t numFeatures);
 
     void fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) override;
-    [[nodiscard]] std::vector<std::string> predict(const std::vector<std::vector<std::string>>& xTrain) const override;
+    [[nodiscard]] std::vector<std::string> predict(const std::vector<std::vector<std::string>>& xTest) const override;
 
 private:
     std::size_t numTrees;

@@ -34,3 +34,35 @@ void RandomForest::fit(const std::vector<std::vector<std::string>>& xTrain, cons
         this->forest.push_back(std::move(tree));
     }
 }
+
+std::vector<std::string> RandomForest::predict(const std::vector<std::vector<std::string>>& xTest) const {
+    std::vector<std::vector<std::string>> predictions;
+    predictions.reserve(this->numTrees);
+
+    for (auto i{0uz}; i < this->numTrees; i++) {
+        const std::unique_ptr<CART>& tree = this->forest[i];
+        std::vector<std::string> prediction = tree->predict(xTest);
+        predictions.push_back(std::move(prediction));
+    }
+
+    std::vector<std::string> finalPredictions;
+    finalPredictions.reserve(predictions.front().size());
+    for (auto j{0uz}; j < xTest.size(); j++) {
+        std::unordered_map<std::string, int> frequencies;
+        for (auto i{0uz}; i < this->numTrees; i++) {
+            frequencies[predictions[i][j]]++;
+        }
+
+        int max = 0;
+        std::string maxString;
+        for (const auto& frequency : frequencies) {
+            if (frequency.second > max) {
+                max = frequency.second;
+                maxString = frequency.first;
+            }
+        }
+        finalPredictions.push_back(maxString);
+    }
+
+    return finalPredictions;
+}
