@@ -21,7 +21,7 @@ int main(void) {
     ID3 id3DecisionTree;
     id3DecisionTree.fit(xTrain, yTrain);
 
-    std::vector<std::vector<std::string>> xTest = {
+    std::vector<std::vector<std::string>>   xTest = {
         // Was trained with this combination. Should predict NO.
         {"Sunny", "Hot", "High", "Weak"},
 
