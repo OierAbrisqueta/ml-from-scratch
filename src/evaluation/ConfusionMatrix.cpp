@@ -64,3 +64,16 @@ int ConfusionMatrix::getFN(size_t classIndex) const {
     }
     return fn;
 }
+
+double ConfusionMatrix::accuracy() const {
+    int totalCorrect = 0;
+    for (auto i{0uz}; i < this->m.getNumberRows(); i++) {
+        totalCorrect += this->getTP(i);
+    }
+
+    return static_cast<double>(totalCorrect) / this->totalPredictions;
+}
+
+double ConfusionMatrix::errorRate() const {
+    return 1 - accuracy();
+}

@@ -8,6 +8,10 @@
 class ConfusionMatrix {
 public:
     ConfusionMatrix(const std::vector<std::string>& yPred, const std::vector<std::string>& yReal);
+
+    [[nodiscard]] double accuracy() const;
+    [[nodiscard]] double errorRate() const;
+
 private:
     int totalPredictions;
     Matrix m;
