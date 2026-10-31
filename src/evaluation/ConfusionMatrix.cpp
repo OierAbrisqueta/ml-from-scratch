@@ -7,6 +7,8 @@ ConfusionMatrix::ConfusionMatrix(const std::vector<std::string> &yPred, const st
         throw std::invalid_argument("Prediction and real vectors must be the same size");
     }
 
+    totalPredictions = yPred.size();
+
     //Find every unique category
     std::unordered_set<std::string> everyCategory;
     for (const std::string& s : yPred) {
@@ -35,6 +37,30 @@ ConfusionMatrix::ConfusionMatrix(const std::vector<std::string> &yPred, const st
         const std::string& colString = yPred.at(i);
         std::size_t col = catToInt[colString];
 
-        m(row, col) = m(row, col)++;
+        this->m(row, col)++;
     }
+}
+
+int ConfusionMatrix::getTP(size_t classIndex) const {
+    return m(classIndex, classIndex);
+}
+
+int ConfusionMatrix::getTN(size_t classIndex) const {
+    return this->totalPredictions - (getFN(classIndex) + getFP(classIndex) + getTP(classIndex));
+}
+
+int ConfusionMatrix::getFP(size_t classIndex) const {
+    int fp{0};
+    for (auto i{0uz}; i < m.getNumberRows(); i++) {
+        if (classIndex != i) fp += m(i, classIndex);
+    }
+    return fp;
+}
+
+int ConfusionMatrix::getFN(size_t classIndex) const {
+    int fn{0};
+    for (auto i{0uz}; i < m.getNumberColumns(); i++) {
+        if (classIndex != i) fn += m(classIndex, i);
+    }
+    return fn;
 }
