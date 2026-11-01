@@ -18,12 +18,13 @@ public:
     [[nodiscard]] double accuracy() const;
     [[nodiscard]] double errorRate() const;
 
+    //Multiclass Evaluation Methods
     [[nodiscard]] double sensitivity(Average averageType) const;
     [[nodiscard]] double recall(Average averageType) const;
-
     [[nodiscard]] double specificity(Average averageType) const;
-
     [[nodiscard]] double precision(Average averageType) const;
+    [[nodiscard]] double fMeasure(Average averageType, double beta = 1.0) const;
+    [[nodiscard]] double mcc() const;
 
 private:
     int totalPredictions;

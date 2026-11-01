@@ -1,6 +1,7 @@
 #include "scratch_ml/evaluation/ConfusionMatrix.hpp"
 #include <unordered_map>
 #include <unordered_set>
+#include <cmath>
 
 ConfusionMatrix::ConfusionMatrix(const std::vector<std::string> &yPred, const std::vector<std::string> &yReal) {
     if (yPred.size() != yReal.size()) {
@@ -208,6 +209,7 @@ std::vector<double> ConfusionMatrix::perClassSpecificity() const {
     return sensitivities;
 }
 
+//Returns the precision of the model: it is calculated differently depending on the average type selected
 double ConfusionMatrix::precision(Average averageType) const {
     switch (averageType) {
         case Average::MICRO: {
@@ -267,4 +269,35 @@ std::vector<double> ConfusionMatrix::perClassPrecision() const {
     }
 
     return precisions;
+}
+
+double ConfusionMatrix::fMeasure(Average averageType, double beta) const {
+    double prec = precision(averageType);
+    double rec = recall(averageType);
+    return (1 + beta * beta) * prec * rec / (beta * beta * prec + rec);
+}
+
+double ConfusionMatrix::mcc() const {
+    double s = static_cast<double>(this->totalPredictions);
+    double c = 0.0;
+    double sum_pk_tk = 0.0;
+    double sum_pk_squared = 0.0;
+    double sum_tk_squared = 0.0;
+
+    for (auto k{0uz}; k < this->m.getNumberColumns(); k++) {
+        double tp = static_cast<double>(this->getTP(k));
+        double tk = static_cast<double>(this->getTP(k) + this->getFN(k));
+        double pk = static_cast<double>(this->getTP(k) + this->getFP(k));
+
+        c += tp;
+        sum_pk_tk += (pk * tk);
+        sum_pk_squared += (pk * pk);
+        sum_tk_squared += (tk * tk);
+    }
+
+    double numerator = (c * s) - sum_pk_tk; // c * s - sum(pk * tk)
+    double denominator = std::sqrt((s * s - sum_pk_squared) * (s * s - sum_tk_squared)); // sqrt((s^2 - sum(pk^2)) * (s^2 - sum(tk^2)))
+
+    if (denominator == 0.0) return 0.0;
+    return numerator / denominator;
 }
