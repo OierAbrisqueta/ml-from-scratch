@@ -66,6 +66,8 @@ int ConfusionMatrix::getFN(size_t classIndex) const {
     return fn;
 }
 
+//Global Metrics
+
 //Returns the accuracy of the model
 double ConfusionMatrix::accuracy() const {
     int totalCorrect = 0;
@@ -80,6 +82,30 @@ double ConfusionMatrix::accuracy() const {
 double ConfusionMatrix::errorRate() const {
     return 1 - accuracy();
 }
+
+//Binary / Specific class Evaluation Methods
+
+//Returns the sensitivity of the model
+double ConfusionMatrix::sensitivity(const std::string& targetClass) const {
+    auto it = this->catToInt.find(targetClass);
+    if (it == this->catToInt.end()) throw std::invalid_argument("The target class is not in the confusion matrix");
+
+    int index = it->second;
+
+    int tp = getTP(index);
+    int fn = getFN(index);
+
+    if (tp + fn == 0) return 0.0;
+
+    return static_cast<double>(tp) / (tp + fn);
+}
+
+//Returns the recall of the model
+double ConfusionMatrix::recall(const std::string& targetClass) const {
+    return sensitivity(targetClass);
+}
+
+//Multiclass Evaluation Methods
 
 //Returns the sensitivity of the model: it is calculated differently depending on the average type selected
 double ConfusionMatrix::sensitivity(Average averageType) const {
