@@ -145,3 +145,126 @@ std::vector<double> ConfusionMatrix::perClassSensitivity() const {
 double ConfusionMatrix::recall(Average averageType) const {
     return sensitivity(averageType);
 }
+
+//Returns the specificity of the model: it is calculated differently depending on the average type selected
+double ConfusionMatrix::specificity(Average averageType) const {
+    switch (averageType) {
+        case Average::MICRO: {
+            int tn{0};
+            int fp{0};
+            for (auto i{0uz}; i < this->m.getNumberColumns(); i++) {
+                tn += this->getTN(i);
+                fp += this->getFP(i);
+            }
+
+            if (tn + fp == 0) return 0.0;
+            return static_cast<double>(tn) / (tn + fp);
+        }
+
+        case Average::MACRO: {
+            std::vector<double> specificityMacro = perClassSpecificity();
+
+            double sumMacro{0.0};
+            for (auto i{0uz}; i < specificityMacro.size(); i++) {
+                sumMacro += specificityMacro[i];
+            }
+            return sumMacro / static_cast<double>(specificityMacro.size());
+        }
+
+        case Average::WEIGHTED: {
+            std::vector<double> specificitiesWeighted = perClassSpecificity();
+
+            std::vector<double> weights;
+            for (auto i{0uz}; i < this->m.getNumberColumns(); i++) {
+                int total = getTP(i) + getFN(i);
+                weights.push_back(static_cast<double>(total) / this->totalPredictions);
+            }
+
+            double sumWeighted{0.0};
+            for (auto i{0uz}; i < specificitiesWeighted.size(); i++) {
+                sumWeighted += specificitiesWeighted[i] * weights[i];
+            }
+            return sumWeighted;
+        }
+
+        default:
+            throw std::invalid_argument("Not a proper Average Type");
+    }
+}
+
+std::vector<double> ConfusionMatrix::perClassSpecificity() const {
+    std::vector<double> sensitivities;
+    for (auto i{0uz}; i < this->m.getNumberColumns(); i++) {
+        int tn{0};
+        int fp{0};
+        tn += this->getTN(i);
+        fp += this->getFP(i);
+        if (tn + fp == 0) sensitivities.push_back(0.0);
+        else {
+            sensitivities.push_back(static_cast<double>(tn) / (tn + fp));
+        }
+    }
+
+    return sensitivities;
+}
+
+double ConfusionMatrix::precision(Average averageType) const {
+    switch (averageType) {
+        case Average::MICRO: {
+            int tp{0};
+            int fp{0};
+            for (auto i{0uz}; i < this->m.getNumberColumns(); i++) {
+                tp += this->getTP(i);
+                fp += this->getFP(i);
+            }
+
+            if (tp + fp == 0) return 0.0;
+            return static_cast<double>(tp) / (tp + fp);
+        }
+
+        case Average::MACRO: {
+            std::vector<double> precisionMacro = perClassPrecision();
+
+            double sumMacro{0.0};
+            for (auto i{0uz}; i < precisionMacro.size(); i++) {
+                sumMacro += precisionMacro[i];
+            }
+            return sumMacro / static_cast<double>(precisionMacro.size());
+        }
+
+        case Average::WEIGHTED: {
+            std::vector<double> precisionWeighted = perClassPrecision();
+
+            std::vector<double> weights;
+            for (auto i{0uz}; i < this->m.getNumberColumns(); i++) {
+                int total = getTP(i) + getFN(i);
+                weights.push_back(static_cast<double>(total) / this->totalPredictions);
+            }
+
+            double sumWeighted{0.0};
+            for (auto i{0uz}; i < precisionWeighted.size(); i++) {
+                sumWeighted += precisionWeighted[i] * weights[i];
+            }
+            return sumWeighted;
+        }
+
+        default:
+            throw std::invalid_argument("Not a proper Average Type");
+    }
+}
+
+std::vector<double> ConfusionMatrix::perClassPrecision() const {
+    std::vector<double> precisions;
+    for (auto i{0uz}; i < this->m.getNumberColumns(); i++) {
+        int tp{0};
+        int fp{0};
+        tp += this->getTP(i);
+        fp += this->getFP(i);
+        if (tp + fp == 0) precisions.push_back(0.0);
+        else {
+            precisions.push_back(static_cast<double>(tp) / (tp + fp));
+        }
+    }
+
+    return precisions;
+}

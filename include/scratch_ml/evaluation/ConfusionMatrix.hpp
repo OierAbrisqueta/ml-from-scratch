@@ -21,6 +21,10 @@ public:
     [[nodiscard]] double sensitivity(Average averageType) const;
     [[nodiscard]] double recall(Average averageType) const;
 
+    [[nodiscard]] double specificity(Average averageType) const;
+
+    [[nodiscard]] double precision(Average averageType) const;
+
 private:
     int totalPredictions;
     Matrix m;
@@ -33,6 +37,8 @@ private:
     [[nodiscard]] int getFN(size_t classIndex) const;
 
     [[nodiscard]] std::vector<double> perClassSensitivity() const;
+    [[nodiscard]] std::vector<double> perClassSpecificity() const;
+    [[nodiscard]] std::vector<double> perClassPrecision() const;
 };
 
 #endif //ML_FROM_SCRATCH_CONFUSIONMATRIX_HPP
