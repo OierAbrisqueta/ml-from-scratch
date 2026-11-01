@@ -5,12 +5,21 @@
 #include <unordered_map>
 #include "scratch_ml/core/matrix.hpp"
 
+enum class Average {
+    MACRO,
+    MICRO,
+    WEIGHTED
+};
+
 class ConfusionMatrix {
 public:
     ConfusionMatrix(const std::vector<std::string>& yPred, const std::vector<std::string>& yReal);
 
     [[nodiscard]] double accuracy() const;
     [[nodiscard]] double errorRate() const;
+
+    [[nodiscard]] double sensitivity(Average averageType) const;
+    [[nodiscard]] double recall(Average averageType) const;
 
 private:
     int totalPredictions;
@@ -22,6 +31,8 @@ private:
     [[nodiscard]] int getTN(size_t classIndex) const;
     [[nodiscard]] int getFP(size_t classIndex) const;
     [[nodiscard]] int getFN(size_t classIndex) const;
+
+    [[nodiscard]] std::vector<double> perClassSensitivity() const;
 };
 
 #endif //ML_FROM_SCRATCH_CONFUSIONMATRIX_HPP

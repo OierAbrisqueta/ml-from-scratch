@@ -65,6 +65,7 @@ int ConfusionMatrix::getFN(size_t classIndex) const {
     return fn;
 }
 
+//Returns the accuracy of the model
 double ConfusionMatrix::accuracy() const {
     int totalCorrect = 0;
     for (auto i{0uz}; i < this->m.getNumberRows(); i++) {
@@ -74,6 +75,73 @@ double ConfusionMatrix::accuracy() const {
     return static_cast<double>(totalCorrect) / this->totalPredictions;
 }
 
+//Returns the error rate of the model
 double ConfusionMatrix::errorRate() const {
     return 1 - accuracy();
+}
+
+//Returns the sensitivity of the model: it is calculated differently depending on the average type selected
+double ConfusionMatrix::sensitivity(Average averageType) const {
+    switch (averageType) {
+        case Average::MICRO: {
+            int tp{0};
+            int fn{0};
+            for (auto i{0uz}; i < this->m.getNumberColumns(); i++) {
+                tp += this->getTP(i);
+                fn += this->getFN(i);
+            }
+
+            if (tp + fn == 0) return 0.0;
+            return static_cast<double>(tp) / (tp + fn);
+        }
+
+        case Average::MACRO: {
+            std::vector<double> sensitivitiesMacro = perClassSensitivity();
+
+            double sumMacro{0.0};
+            for (auto i{0uz}; i < sensitivitiesMacro.size(); i++) {
+                sumMacro += sensitivitiesMacro[i];
+            }
+            return sumMacro / static_cast<double>(sensitivitiesMacro.size());
+        }
+
+        case Average::WEIGHTED: {
+            std::vector<double> sensitivitiesWeighted = perClassSensitivity();
+
+            std::vector<double> weights;
+            for (auto i{0uz}; i < this->m.getNumberColumns(); i++) {
+                int total = getTP(i) + getFN(i);
+                weights.push_back(static_cast<double>(total) / this->totalPredictions);
+            }
+
+            double sumWeighted{0.0};
+            for (auto i{0uz}; i < sensitivitiesWeighted.size(); i++) {
+                sumWeighted += sensitivitiesWeighted[i] * weights[i];
+            }
+            return sumWeighted;
+        }
+
+        default:
+            throw std::invalid_argument("Not a proper Average Type");
+    }
+}
+
+std::vector<double> ConfusionMatrix::perClassSensitivity() const {
+    std::vector<double> sensitivities;
+    for (auto i{0uz}; i < this->m.getNumberColumns(); i++) {
+        int tp{0};
+        int fn{0};
+        tp += this->getTP(i);
+        fn += this->getFN(i);
+        if (tp + fn == 0) sensitivities.push_back(0.0);
+        else {
+            sensitivities.push_back(static_cast<double>(tp) / (tp + fn));
+        }
+    }
+
+    return sensitivities;
+}
+
+double ConfusionMatrix::recall(Average averageType) const {
+    return sensitivity(averageType);
 }
