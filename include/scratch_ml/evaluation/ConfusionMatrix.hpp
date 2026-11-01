@@ -21,6 +21,8 @@ public:
     //Binary/Specific class Evaluation Methods
     [[nodiscard]] double sensitivity(const std::string& targetClass) const;
     [[nodiscard]] double recall(const std::string& targetClass) const;
+    [[nodiscard]] double specificity(const std::string& targetClass) const;
+    [[nodiscard]] double precision(const std::string& targetClass) const;
 
     //Multiclass Evaluation Methods
     [[nodiscard]] double sensitivity(Average averageType) const;

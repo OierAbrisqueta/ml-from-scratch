@@ -105,6 +105,36 @@ double ConfusionMatrix::recall(const std::string& targetClass) const {
     return sensitivity(targetClass);
 }
 
+//Returns the specificity of the model
+double ConfusionMatrix::specificity(const std::string& targetClass) const {
+    auto it = this->catToInt.find(targetClass);
+    if (it == this->catToInt.end()) throw std::invalid_argument("The target class is not in the confusion matrix");
+
+    int index = it->second;
+
+    int tn = getTN(index);
+    int fp = getFP(index);
+
+    if (tn + fp == 0) return 0.0;
+
+    return static_cast<double>(tn) / (tn + fp);
+}
+
+//Returns the precision of the model
+double ConfusionMatrix::precision(const std::string& targetClass) const {
+    auto it = this->catToInt.find(targetClass);
+    if (it == this->catToInt.end()) throw std::invalid_argument("The target class is not in the confusion matrix");
+
+    int index = it->second;
+
+    int tp = getTN(index);
+    int fp = getFP(index);
+
+    if (tp + fp == 0) return 0.0;
+
+    return static_cast<double>(tp) / (tp + fp);
+}
+
 //Multiclass Evaluation Methods
 
 //Returns the sensitivity of the model: it is calculated differently depending on the average type selected
