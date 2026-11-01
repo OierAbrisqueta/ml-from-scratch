@@ -135,6 +135,37 @@ double ConfusionMatrix::precision(const std::string& targetClass) const {
     return static_cast<double>(tp) / (tp + fp);
 }
 
+//Returns the f measure of the model
+double ConfusionMatrix::fMeasure(const std::string& targetClass, double beta) const {
+    auto it = this->catToInt.find(targetClass);
+    if (it == this->catToInt.end()) throw std::invalid_argument("The target class is not in the confusion matrix");
+
+    double prec = precision(targetClass);
+    double rec = recall(targetClass);
+    return (1 + beta * beta) * prec * rec / (beta * beta * prec + rec);
+}
+
+double ConfusionMatrix::mcc(const std::string& targetClass) const {
+    auto it = this->catToInt.find(targetClass);
+    if (it == this->catToInt.end()) {
+        throw std::invalid_argument("Class label not found in the confusion matrix.");
+    }
+
+    std::size_t classIndex = it->second;
+
+    double tp = static_cast<double>(this->getTP(classIndex));
+    double tn = static_cast<double>(this->getTN(classIndex));
+    double fp = static_cast<double>(this->getFP(classIndex));
+    double fn = static_cast<double>(this->getFN(classIndex));
+
+    double numerator = (tp * tn) - (fp * fn);
+
+    double denominator = std::sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn));
+
+    if (denominator == 0.0) return 0.0;
+    return numerator / denominator;
+}
+
 //Multiclass Evaluation Methods
 
 //Returns the sensitivity of the model: it is calculated differently depending on the average type selected

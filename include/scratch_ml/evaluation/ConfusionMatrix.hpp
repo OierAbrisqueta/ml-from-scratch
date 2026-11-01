@@ -23,6 +23,8 @@ public:
     [[nodiscard]] double recall(const std::string& targetClass) const;
     [[nodiscard]] double specificity(const std::string& targetClass) const;
     [[nodiscard]] double precision(const std::string& targetClass) const;
+    [[nodiscard]] double fMeasure(const std::string& targetClass, double beta = 1.0) const;
+    [[nodiscard]] double mcc(const std::string& targetClass) const;
 
     //Multiclass Evaluation Methods
     [[nodiscard]] double sensitivity(Average averageType) const;
