@@ -8,6 +8,7 @@ RandomForest::RandomForest(std::size_t numTrees, std::size_t numFeatures) {
 }
 
 void RandomForest::fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) {
+    this->forest.clear();
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<std::size_t> dist(0, xTrain.size() - 1);
@@ -65,4 +66,25 @@ std::vector<std::string> RandomForest::predict(const std::vector<std::vector<std
     }
 
     return finalPredictions;
+}
+
+std::vector<std::unordered_map<std::string, double>> RandomForest::predictionProbabilities(const std::vector<std::vector<std::string> > &xSample) const {
+    std::vector<std::unordered_map<std::string, double>> result(xSample.size());
+
+    for (const auto& tree : forest) {
+        std::vector<std::unordered_map<std::string, double>> treeProb = tree->predictionProbabilities(xSample);
+        for (auto j{0uz}; j < treeProb.size(); j++) {
+            for (const auto& [key, value] : treeProb[j]) {
+                result[j][key] += value;
+            }
+        }
+    }
+
+    for (auto j{0uz}; j < result.size(); j++) {
+        for (auto& [key, value] : result[j]) {
+            value /= static_cast<double>(this->forest.size());
+        }
+    }
+
+    return result;
 }
