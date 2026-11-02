@@ -3,9 +3,15 @@
 #include <numeric>
 
 void CART::fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) {
+    this->allClasses.clear();
+    for (const std::string& s: yTrain) {
+        this->allClasses.insert(s);
+    }
+
     size_t nRows= xTrain.size();
     size_t nCols = xTrain.front().size();
 
+    this->featureValue.clear();
     this->featureValue.resize(nCols);
 
     std::vector<std::vector<int>> preMatrix(nRows, std::vector<int>(nCols, 0));
@@ -67,6 +73,21 @@ std::vector<std::string> CART::predict(const std::vector<std::vector<std::string
 }
 
 std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& activeRows) {
+    std::unordered_map<std::string, int> freq;
+    for (const std::string& s : this->allClasses) {
+        freq[s] = 0;
+    }
+
+    for (auto i{0uz}; i < activeRows.size(); i++) {
+        freq[data.y[activeRows.at(i)]]++;
+    }
+
+    //Compute the proportions
+    std::unordered_map<std::string, double> proportions;
+    for (const auto& [key, value] : freq) {
+        proportions[key] = static_cast<double>(value) / static_cast<double>(activeRows.size());
+    }
+
     //Base Case 1
     std::string value = data.y[activeRows[0]];
     bool areSame = true;
@@ -80,6 +101,7 @@ std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& act
         auto leafNode = std::make_unique<Node>();
         leafNode->isLeaf = true;
         leafNode->predictedClass = value;
+        leafNode->classProbabilities = proportions;
         return leafNode;
     }
 
@@ -106,6 +128,7 @@ std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& act
         auto leafNode = std::make_unique<Node>();
         leafNode->isLeaf = true;
         leafNode->predictedClass = mostCommon;
+        leafNode->classProbabilities = proportions;
         return leafNode;
     }
 
@@ -136,6 +159,7 @@ std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& act
     }
 
     auto node = std::make_unique<Node>();
+    node->classProbabilities = proportions;
     node->isLeaf = false;
     node->left = buildTreeRecursive(leftNodes);
     node ->right = buildTreeRecursive(rightNodes);
@@ -197,4 +221,33 @@ void CART::getBestSplit(const std::vector<int>& activeRows, int& bestFeature, in
             }
         }
     }
+}
+
+std::vector<std::unordered_map<std::string, double> > CART::predictionProbabilities(const std::vector<std::vector<std::string> > &xSample) const {
+    std::vector<std::unordered_map<std::string, double>> classProbabilities;
+
+    for (auto i{0uz}; i < xSample.size(); i++) {
+        Node* currentNode = root.get();
+        const std::vector<std::string>& sample = xSample[i];
+
+        while (!currentNode->isLeaf) {
+            int feature = currentNode->splitFeature;
+            const std::string& category = sample[feature];
+
+            auto codeIt = featureValue[feature].find(category);
+            if (codeIt == featureValue[feature].end()) {
+                break;
+            }
+
+            if (codeIt->second == currentNode->splitValue) {
+                currentNode = currentNode->left.get();
+            } else {
+                currentNode = currentNode->right.get();
+            }
+        }
+
+        classProbabilities.push_back(currentNode->classProbabilities);
+    }
+
+    return classProbabilities;
 }
