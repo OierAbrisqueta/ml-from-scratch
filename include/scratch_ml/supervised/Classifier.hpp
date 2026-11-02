@@ -2,6 +2,7 @@
 #define ML_FROM_SCRATCH_CLASSIFIER_HPP
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include <scratch_ml/core/matrix.hpp>
 
@@ -17,5 +18,6 @@ public:
 
     virtual void fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) = 0;
     [[nodiscard]] virtual std::vector<std::string> predict(const std::vector<std::vector<std::string>>& xTrain) const = 0;
+    [[nodiscard]] virtual std::vector<std::unordered_map<std::string, double>> predictionProbabilities(const std::vector<std::vector<std::string>>& xSample) const = 0;
 };
 #endif //ML_FROM_SCRATCH_CLASSIFIER_HPP

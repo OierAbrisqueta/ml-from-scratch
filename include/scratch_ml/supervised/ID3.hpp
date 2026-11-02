@@ -3,6 +3,7 @@
 #include "Classifier.hpp"
 #include <unordered_map>
 #include <memory>
+#include <unordered_set>
 
 class ID3: public Classifier {
 public:
@@ -10,6 +11,7 @@ public:
 
     void fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) override;
     [[nodiscard]] std::vector<std::string> predict(const std::vector<std::vector<std::string>>& xTrain) const override;
+    std::vector<std::unordered_map<std::string, double>> predictionProbabilities(const std::vector<std::vector<std::string>> &xSample) const override;
 
 private:
     struct Node {
@@ -17,10 +19,12 @@ private:
         int value = -1;
         std::unordered_map<int, std::unique_ptr<Node>> childrenNodes;
         std::string predictedClass;
+        std::unordered_map<std::string, double> classProbabilities;
     };
 
     DataSet data;
     std::unique_ptr<Node> root;
+    std::unordered_set<std::string> allClasses;
 
     std::vector<std::unordered_map<std::string, int>> featureValue;
 

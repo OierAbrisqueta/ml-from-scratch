@@ -5,9 +5,15 @@
 #include <numeric>
 
 void ID3::fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) {
+    allClasses.clear();
+    for (const std::string& s : yTrain) {
+        this->allClasses.insert(s);
+    }
+
     size_t nRows= xTrain.size();
     size_t nCols = xTrain.front().size();
 
+    this->featureValue.clear();
     this->featureValue.resize(nCols);
 
     std::vector<std::vector<int>> preMatrix(nRows, std::vector<int>(nCols, 0));
@@ -38,6 +44,22 @@ void ID3::fit(const std::vector<std::vector<std::string>>& xTrain, const std::ve
 }
 
 std::unique_ptr<ID3::Node> ID3::id3Recursive(const std::vector<int>& activeRows, const std::vector<int>& availableFeatures) {
+    //Get the frequence of each class in active rows
+    std::unordered_map<std::string, int> freq;
+    for (const std::string& s : this->allClasses) {
+        freq[s] = 0;
+    }
+
+    for (auto i{0uz}; i < activeRows.size(); i++) {
+        freq[data.y[activeRows.at(i)]]++;
+    }
+
+    //Compute the proportions
+    std::unordered_map<std::string, double> proportions;
+    for (const auto& [key, value] : freq) {
+        proportions[key] = static_cast<double>(value) / static_cast<double>(activeRows.size());
+    }
+
     //Base Case 1
     std::string firstLabel = data.y[activeRows.front()];
     bool isNode = true;
@@ -53,6 +75,7 @@ std::unique_ptr<ID3::Node> ID3::id3Recursive(const std::vector<int>& activeRows,
         auto leafNode = std::make_unique<Node>();
         leafNode->isLeaf = true;
         leafNode->predictedClass = firstLabel;
+        leafNode->classProbabilities = proportions;
         return leafNode;
     }
 
@@ -76,6 +99,7 @@ std::unique_ptr<ID3::Node> ID3::id3Recursive(const std::vector<int>& activeRows,
         auto leafNode = std::make_unique<Node>();
         leafNode->isLeaf = true;
         leafNode->predictedClass = mode;
+        leafNode->classProbabilities = proportions;
         return leafNode;
     }
 
@@ -83,6 +107,7 @@ std::unique_ptr<ID3::Node> ID3::id3Recursive(const std::vector<int>& activeRows,
     auto node = std::make_unique<Node>();
     node->isLeaf = false;
     node->value = bestSplit;
+    node->classProbabilities = proportions;
 
     std::vector<int> remainingFeatures = availableFeatures;
     std::erase(remainingFeatures, bestSplit);
@@ -187,4 +212,35 @@ std::vector<std::string> ID3::predict(const std::vector<std::vector<std::string>
     }
 
     return predictions;
+}
+
+//Calculates the probability of each class
+std::vector<std::unordered_map<std::string, double>> ID3::predictionProbabilities(const std::vector<std::vector<std::string> > &xSample) const {
+    std::vector<std::unordered_map<std::string, double>> classProbabilities;
+
+    for (auto i{0uz}; i < xSample.size(); i++) {
+        Node* currentNode = root.get();
+        const std::vector<std::string>& sample = xSample[i];
+
+        while (!currentNode->isLeaf) {
+            int feature = currentNode->value;
+            const std::string& category = sample[feature];
+
+            auto codeIt = featureValue[feature].find(category);
+            if (codeIt == featureValue[feature].end()) {
+                break;
+            }
+
+            auto childIt = currentNode->childrenNodes.find(codeIt->second);
+            if (childIt == currentNode->childrenNodes.end()) {
+                break;
+            }
+
+            currentNode = childIt->second.get();
+        }
+
+        classProbabilities.push_back(currentNode->classProbabilities);
+    }
+
+    return classProbabilities;
 }
