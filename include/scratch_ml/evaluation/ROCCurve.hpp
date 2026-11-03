@@ -17,6 +17,7 @@ public:
 private:
     std::unordered_map<std::string, std::vector<ROCPoint>> classCurves;
     std::vector<ROCPoint> microCurve;
+    std::unordered_map<std::string, int> classSupport;
 
     [[nodiscard]] static std::vector<ROCPoint> computeBinaryCurve(const std::vector<std::pair<double, bool>>& scoredLabels,
         std::size_t totalPositives, std::size_t totalNegatives);

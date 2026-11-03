@@ -2,12 +2,61 @@
 #include <stdexcept>
 #include <scratch_ml/evaluation/ROCCurve.hpp>
 
-/*ROCCurve::ROCCurve(const std::vector<std::unordered_map<std::string, double> > &yProbabilities, const std::vector<std::string> &yReal) {
+ROCCurve::ROCCurve(const std::vector<std::unordered_map<std::string, double>> &yProbabilities, const std::vector<std::string> &yReal) {
     if (yProbabilities.empty() || yProbabilities.size() != yReal.size()) {
         throw std::invalid_argument("yReal and yProbabilities should have the same size and can't be empty");
     }
 
-}*/
+    int totalSamples = static_cast<int>(yReal.size());
+
+    // Count all instances of a class
+    for (const std::string& label : yReal) {
+        this->classSupport[label]++;
+    }
+
+    if (this->classSupport.size() < 2) {
+        throw std::invalid_argument("ROC needs at least two distinct classes in yReal");
+    }
+
+    // One vs Rest ROC
+    for (const auto& [targetClass, positiveCount] : this->classSupport) {
+        std::size_t negativeCount = totalSamples - positiveCount;
+        std::vector<std::pair<double, bool>> scoredLabels;
+        scoredLabels.reserve(totalSamples);
+
+        for (int i = 0; i < totalSamples; i++) {
+            double prob = 0.0;
+            auto it = yProbabilities[i].find(targetClass);
+            if (it != yProbabilities[i].end()) {
+                prob = it->second;
+            }
+            bool isPositive = (yReal[i] == targetClass);
+            scoredLabels.emplace_back(prob, isPositive);
+        }
+
+        this->classCurves[targetClass] = computeBinaryCurve(scoredLabels, positiveCount, negativeCount);
+    }
+
+    std::size_t numClasses = this->classSupport.size();
+    std::vector<std::pair<double, bool>> microScoredLabels;
+    microScoredLabels.reserve(totalSamples * numClasses);
+
+    for (int i = 0; i < totalSamples; i++) {
+        for (const auto& [targetClass, notUsed] : this->classSupport) {
+            double prob = 0.0;
+            auto it = yProbabilities[i].find(targetClass);
+            if (it != yProbabilities[i].end()) {
+                prob = it->second;
+            }
+            bool isPositive = (yReal[i] == targetClass);
+            microScoredLabels.emplace_back(prob, isPositive);
+        }
+    }
+
+    this->microCurve = computeBinaryCurve(
+        microScoredLabels, totalSamples, totalSamples * (numClasses - 1)
+    );
+}
 
 std::vector<ROCPoint> ROCCurve::computeBinaryCurve(const std::vector<std::pair<double, bool>> &scoredLabels,
     std::size_t totalPositives, std::size_t totalNegatives) {
@@ -22,8 +71,7 @@ std::vector<ROCPoint> ROCCurve::computeBinaryCurve(const std::vector<std::pair<d
     curve.push_back({0.0, 0.0, 1.0});
 
     if (totalPositives == 0 || totalNegatives == 0) {
-        curve.push_back({1.0, 1.0, 0.0});
-        return curve;
+        throw std::invalid_argument("computeBinaryCurve needs at least one positive and one negative");
     }
 
     std::size_t tp = 0;
