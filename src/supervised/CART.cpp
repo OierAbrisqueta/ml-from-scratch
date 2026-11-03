@@ -155,6 +155,7 @@ std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& act
         auto leafNode = std::make_unique<Node>();
         leafNode->isLeaf = true;
         leafNode->predictedClass = mostCommon;
+        leafNode->classProbabilities = proportions;
         return leafNode;
     }
 
