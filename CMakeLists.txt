@@ -16,7 +16,9 @@ add_library(scratch_ml STATIC
         include/scratch_ml/supervised/RandomForest.hpp
         src/supervised/RandomForest.cpp
         include/scratch_ml/evaluation/ConfusionMatrix.hpp
-        src/evaluation/ConfusionMatrix.cpp)
+        src/evaluation/ConfusionMatrix.cpp
+        include/scratch_ml/evaluation/ROCCurve.hpp
+        src/evaluation/ROCCurve.cpp)
 
 target_include_directories(scratch_ml PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
