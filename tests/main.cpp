@@ -37,11 +37,16 @@ int main(void) {
     id3DecisionTree.fit(xTrain, yTrain);
 
     std::vector<std::string> predictionsID3 = id3DecisionTree.predict(xTest);
+    std::vector<std::unordered_map<std::string, double>> predictionProbabilities = id3DecisionTree.predictionProbabilities(xTest);
 
     std::cout << std::endl;
     std::cout << "----- ID3 CLASSIFICATION ALGORITHM -----" << std::endl;
     for (auto i{0uz}; i < predictionsID3.size(); i++) {
         std::cout << "Prediction made for combination in row " << i << ": " << predictionsID3[i] << std::endl;
+        std::cout << "Probabilities for this row" << std::endl;
+        for (const auto& [key, value] : predictionProbabilities[i]) {
+            std::cout << "Probabilities for " << key << "is: " << value << std::endl;
+        }
     }
 
     //CART Algorithm
