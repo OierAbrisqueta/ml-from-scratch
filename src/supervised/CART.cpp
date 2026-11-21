@@ -1,4 +1,5 @@
 #include <scratch_ml/supervised/CART.hpp>
+#include <algorithm>
 #include <unordered_set>
 #include <numeric>
 
@@ -199,25 +200,32 @@ void CART::splitData(const std::vector<int>& activeRows, int feature, int value,
 }
 
 void CART::getBestSplit(const std::vector<int>& activeRows, int& bestFeature, int& bestValue) {
+    std::vector<int> candidates(data.X.getNumberColumns());
+    std::iota(candidates.begin(), candidates.end(), 0);
+    if (maxFeatures > 0 && maxFeatures < candidates.size()) {
+        std::shuffle(candidates.begin(), candidates.end(), featureGenerator);
+        candidates.resize(maxFeatures);
+    }
+
     double lowestImpurity = 1.1;
-    for (int i = 0; i < data.X.getNumberColumns(); i++) {
+    for (int feature : candidates) {
         std::unordered_set<int> uniqueValues;
         for (size_t j{0uz}; j < activeRows.size(); j++) {
             int row = activeRows[j];
-            int value = data.X(row, i);
+            int value = data.X(row, feature);
             uniqueValues.insert(value);
         }
 
         for (int candidate : uniqueValues) {
             std::vector<int> right;
             std::vector<int> left;
-            splitData(activeRows, i, candidate, left, right);
+            splitData(activeRows, feature, candidate, left, right);
             double giniLeft = getGiniImpurity(left);
             double giniRight = getGiniImpurity(right);
             double weightedGini = (static_cast<double>(left.size())/static_cast<double>(activeRows.size())) * giniLeft + (static_cast<double>(right.size())/static_cast<double>(activeRows.size())) * giniRight;
             if (lowestImpurity > weightedGini) {
                 lowestImpurity = weightedGini;
-                bestFeature = i;
+                bestFeature = feature;
                 bestValue = candidate;
             }
         }

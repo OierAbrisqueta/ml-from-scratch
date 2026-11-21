@@ -7,6 +7,7 @@
 
 class RandomForest: public Classifier {
 public:
+    // Sample up to numFeatures distinct columns per split. Zero uses all columns.
     RandomForest(std::size_t numTrees, std::size_t numFeatures);
 
     void fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) override;

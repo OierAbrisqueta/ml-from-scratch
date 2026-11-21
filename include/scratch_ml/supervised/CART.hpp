@@ -4,11 +4,14 @@
 #include <scratch_ml/supervised/Classifier.hpp>
 #include <unordered_map>
 #include <memory>
+#include <random>
 #include <unordered_set>
 
 class CART: public Classifier {
 public:
     CART() = default;
+    CART(std::size_t maxFeatures, std::minstd_rand::result_type seed)
+        : maxFeatures(maxFeatures), featureGenerator(seed) {}
 
     void fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) override;
     [[nodiscard]] std::vector<std::string> predict(const std::vector<std::vector<std::string>>& xTrain) const override;
@@ -27,6 +30,8 @@ private:
     };
 
     DataSet data;
+    std::size_t maxFeatures = 0;
+    std::minstd_rand featureGenerator;
     std::unique_ptr<Node> root;
 
     std::vector<std::unordered_map<std::string, int>> featureValue;

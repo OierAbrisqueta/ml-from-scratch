@@ -3,7 +3,39 @@
 #include <scratch_ml/supervised/CART.hpp>
 #include <scratch_ml/supervised/RandomForest.hpp>
 
+static bool testFeatureSampling() {
+    const std::vector<std::vector<std::string>> rows = {
+        {"0", "0"}, {"0", "1"}, {"1", "0"}, {"1", "1"}
+    };
+    const std::vector<std::string> labels = {"no", "yes", "yes", "no"};
+
+    for (std::size_t limit : {0uz, 2uz, 3uz}) {
+        CART tree(limit, 42);
+        tree.fit(rows, labels);
+        if (tree.predict(rows) != labels) {
+            return false;
+        }
+    }
+
+    bool fittedBothColumns = false;
+    bool missedSplit = false;
+    for (unsigned seed = 1; seed <= 128; ++seed) {
+        CART tree(1, seed);
+        tree.fit(rows, labels);
+        if (tree.predict(rows) == labels) {
+            fittedBothColumns = true;
+        } else {
+            missedSplit = true;
+        }
+    }
+    return fittedBothColumns && missedSplit;
+}
+
 int main(void) {
+    if (!testFeatureSampling()) {
+        std::cerr << "Per-split feature sampling regression\n";
+        return 1;
+    }
     std::vector<std::vector<std::string>> xTrain = {
         {"Sunny", "Hot", "High", "Weak"},
         {"Sunny", "Hot", "High", "Strong"},
@@ -62,7 +94,7 @@ int main(void) {
     }
 
     //Random Forest Algorithm
-    RandomForest rf(100, 4);
+    RandomForest rf(100, 2);
     rf.fit(xTrain, yTrain);
 
     std::vector<std::string> predictionsRF = rf.predict(xTest);

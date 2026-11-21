@@ -30,7 +30,7 @@ void RandomForest::fit(const std::vector<std::vector<std::string>>& xTrain, cons
             tempY.push_back(yTrain[iRandom]);
         }
 
-        auto tree = std::make_unique<CART>();
+        auto tree = std::make_unique<CART>(maxFeatures, gen());
         tree->fit(tempX, tempY);
         this->forest.push_back(std::move(tree));
     }
