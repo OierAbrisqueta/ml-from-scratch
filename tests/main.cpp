@@ -31,7 +31,28 @@ static bool testFeatureSampling() {
     return fittedBothColumns && missedSplit;
 }
 
+static bool testConstantFeatureSplits() {
+    CART tree;
+    const std::vector<std::vector<std::string>> rows = {
+        {"fixed", "0", "0"}, {"fixed", "0", "1"},
+        {"fixed", "1", "0"}, {"fixed", "1", "1"}
+    };
+    const std::vector<std::string> labels = {"no", "yes", "yes", "no"};
+    tree.fit(rows, labels);
+    if (tree.predict(rows) != labels) {
+        return false;
+    }
+
+    tree.fit({{"fixed"}, {"fixed"}, {"fixed"}}, {"yes", "no", "yes"});
+    return tree.predict({{"fixed"}}).at(0) == "yes"
+        && tree.predictionProbabilities({{"fixed"}}).at(0).at("yes") == 2.0 / 3.0;
+}
+
 int main(void) {
+    if (!testConstantFeatureSplits()) {
+        std::cerr << "Constant-feature split regression\n";
+        return 1;
+    }
     if (!testFeatureSampling()) {
         std::cerr << "Per-split feature sampling regression\n";
         return 1;

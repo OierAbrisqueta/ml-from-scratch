@@ -137,29 +137,6 @@ std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& act
     std::vector<int> rightNodes;
     splitData(activeRows, bestFeature, bestValue, leftNodes, rightNodes);
 
-    //If split concluded in no meaningful split
-    if (rightNodes.empty() || leftNodes.empty()) {
-        std::unordered_map<std::string, int> frequencies;
-        for (auto i{0uz}; i < activeRows.size(); i++) {
-            frequencies[data.y[activeRows[i]]]++;
-        }
-
-        std::string mostCommon;
-        int maxFreq = -1;
-        for (const auto freq : frequencies) {
-            if (freq.second > maxFreq) {
-                mostCommon = freq.first;
-                maxFreq = freq.second;
-            }
-        }
-
-        auto leafNode = std::make_unique<Node>();
-        leafNode->isLeaf = true;
-        leafNode->predictedClass = mostCommon;
-        leafNode->classProbabilities = proportions;
-        return leafNode;
-    }
-
     auto node = std::make_unique<Node>();
     node->classProbabilities = proportions;
     node->isLeaf = false;
@@ -171,6 +148,10 @@ std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& act
 }
 
 double CART::getGiniImpurity(const std::vector<int>& activeRows) const {
+    if (activeRows.empty()) {
+        return 0.0;
+    }
+
     std::unordered_map<std::string, int> frequencies;
     for (size_t i{0uz}; i < activeRows.size(); i++) {
         std::string current = data.y[activeRows[i]];
@@ -220,6 +201,9 @@ void CART::getBestSplit(const std::vector<int>& activeRows, int& bestFeature, in
             std::vector<int> right;
             std::vector<int> left;
             splitData(activeRows, feature, candidate, left, right);
+            if (left.empty() || right.empty()) {
+                continue;
+            }
             double giniLeft = getGiniImpurity(left);
             double giniRight = getGiniImpurity(right);
             double weightedGini = (static_cast<double>(left.size())/static_cast<double>(activeRows.size())) * giniLeft + (static_cast<double>(right.size())/static_cast<double>(activeRows.size())) * giniRight;
