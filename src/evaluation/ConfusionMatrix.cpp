@@ -127,7 +127,7 @@ double ConfusionMatrix::precision(const std::string& targetClass) const {
 
     int index = it->second;
 
-    int tp = getTN(index);
+    int tp = getTP(index);
     int fp = getFP(index);
 
     if (tp + fp == 0) return 0.0;
