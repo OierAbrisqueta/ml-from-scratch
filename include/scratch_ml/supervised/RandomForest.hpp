@@ -11,6 +11,7 @@ public:
 
     void fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) override;
     [[nodiscard]] std::vector<std::string> predict(const std::vector<std::vector<std::string>>& xTest) const override;
+    [[nodiscard]] std::vector<std::unordered_map<std::string, double>> predictionProbabilities(const std::vector<std::vector<std::string>> &xSample) const override;
 
 private:
     std::size_t numTrees;

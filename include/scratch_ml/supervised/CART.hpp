@@ -4,6 +4,7 @@
 #include <scratch_ml/supervised/Classifier.hpp>
 #include <unordered_map>
 #include <memory>
+#include <unordered_set>
 
 class CART: public Classifier {
 public:
@@ -11,6 +12,7 @@ public:
 
     void fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) override;
     [[nodiscard]] std::vector<std::string> predict(const std::vector<std::vector<std::string>>& xTrain) const override;
+    [[nodiscard]] std::vector<std::unordered_map<std::string, double>> predictionProbabilities(const std::vector<std::vector<std::string>> &xSample) const override;
 
 private:
     struct Node {
@@ -18,6 +20,7 @@ private:
         int splitFeature = -1;
         int splitValue = -1;
         std::string predictedClass;
+        std::unordered_map<std::string, double> classProbabilities;
 
         std::unique_ptr<Node> left;
         std::unique_ptr<Node> right;
@@ -27,6 +30,7 @@ private:
     std::unique_ptr<Node> root;
 
     std::vector<std::unordered_map<std::string, int>> featureValue;
+    std::unordered_set<std::string> allClasses;
 
     std::unique_ptr<Node> buildTreeRecursive(const std::vector<int>& activeRows);
     [[nodiscard]] double getGiniImpurity(const std::vector<int>& activeRows) const;

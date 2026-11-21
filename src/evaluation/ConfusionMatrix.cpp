@@ -3,6 +3,8 @@
 #include <unordered_set>
 #include <cmath>
 
+#include <stdexcept>
+
 ConfusionMatrix::ConfusionMatrix(const std::vector<std::string> &yPred, const std::vector<std::string> &yReal) {
     if (yPred.size() != yReal.size()) {
         throw std::invalid_argument("Prediction and real vectors must be the same size");
