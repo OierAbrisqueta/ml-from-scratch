@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <limits>
 #include <stdexcept>
 #include <scratch_ml/evaluation/ROCCurve.hpp>
 
@@ -67,8 +68,8 @@ std::vector<ROCPoint> ROCCurve::computeBinaryCurve(const std::vector<std::pair<d
     });
 
     std::vector<ROCPoint> curve;
-    // Start at (0, 0) with a threshold slightly above 1.0 (nothing predicted positive)
-    curve.push_back({0.0, 0.0, 1.0});
+    // No finite score reaches the initial threshold.
+    curve.push_back({0.0, 0.0, std::numeric_limits<double>::infinity()});
 
     if (totalPositives == 0 || totalNegatives == 0) {
         throw std::invalid_argument("computeBinaryCurve needs at least one positive and one negative");
