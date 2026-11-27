@@ -103,3 +103,23 @@ const std::unordered_map<std::string, std::vector<ROCPoint> > &ROCCurve::getClas
 const std::vector<ROCPoint> &ROCCurve::getMicroCurve() const {
     return microCurve;
 }
+
+double ROCCurve::getClassAUC(const std::string& targetClass) const {
+    return computeAUC(classCurves.at(targetClass));
+}
+
+double ROCCurve::getMicroAUC() const {
+    return computeAUC(microCurve);
+}
+
+double ROCCurve::computeAUC(const std::vector<ROCPoint>& curve) {
+    double area = 0.0;
+    for (std::size_t i = 1; i < curve.size(); ++i) {
+        const ROCPoint& previous = curve[i - 1];
+        const ROCPoint& current = curve[i];
+        const double width = current.fpr - previous.fpr;
+        const double averageHeight = (previous.tpr + current.tpr) / 2.0;
+        area += width * averageHeight;
+    }
+    return area;
+}
