@@ -95,3 +95,11 @@ std::vector<ROCPoint> ROCCurve::computeBinaryCurve(const std::vector<std::pair<d
 
     return curve;
 }
+
+const std::unordered_map<std::string, std::vector<ROCPoint> > &ROCCurve::getClassCurves() const {
+    return classCurves;
+}
+
+const std::vector<ROCPoint> &ROCCurve::getMicroCurve() const {
+    return microCurve;
+}

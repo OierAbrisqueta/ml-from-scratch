@@ -14,6 +14,10 @@ class ROCCurve {
 public:
     ROCCurve(const std::vector<std::unordered_map<std::string, double>>& yProbabilities, const std::vector<std::string>& yReal);
 
+    [[nodiscard]] const std::unordered_map<std::string, std::vector<ROCPoint>>& getClassCurves() const;
+
+    [[nodiscard]] const std::vector<ROCPoint>& getMicroCurve() const;
+
 private:
     std::unordered_map<std::string, std::vector<ROCPoint>> classCurves;
     std::vector<ROCPoint> microCurve;
