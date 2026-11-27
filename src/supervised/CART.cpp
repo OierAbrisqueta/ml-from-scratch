@@ -4,6 +4,9 @@
 #include <numeric>
 
 void CART::fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) {
+    validateTrainingInput(xTrain, yTrain);
+    root.reset();
+
     this->allClasses.clear();
     for (const std::string& s: yTrain) {
         this->allClasses.insert(s);
@@ -39,37 +42,13 @@ void CART::fit(const std::vector<std::vector<std::string>>& xTrain, const std::v
     this->root = buildTreeRecursive(activeRows);
 }
 
-std::vector<std::string> CART::predict(const std::vector<std::vector<std::string>>& xTrain) const {
+std::vector<std::string> CART::predict(const std::vector<std::vector<std::string>>& rows) const {
+    validatePredictionInput(rows, root != nullptr, featureValue.size());
     std::vector<std::string> predictions;
-
-    for (auto i{0uz}; i < xTrain.size(); i++) {
-        Node* currentNode = root.get();
-        bool predictionFound = true;
-
-        while (!currentNode->isLeaf) {
-            int currentFeature = currentNode->splitFeature;
-            const std::string& categoryStr = xTrain[i][currentFeature];
-
-            if (!featureValue[currentFeature].contains(categoryStr)) {
-                predictionFound = false;
-                break;
-            }
-
-            int categoryInt = featureValue[currentFeature].at(categoryStr);
-            if (currentNode->splitValue == categoryInt) {
-                currentNode = currentNode->left.get();
-            } else {
-                currentNode = currentNode->right.get();
-            }
-        }
-        if (predictionFound) {
-            predictions.push_back(currentNode->predictedClass);
-        } else {
-            predictions.push_back("Unknown");
-        }
-
+    predictions.reserve(rows.size());
+    for (const auto& row : rows) {
+        predictions.push_back(mostProbableClass(predictionNode(row).classProbabilities));
     }
-
     return predictions;
 }
 
@@ -101,7 +80,6 @@ std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& act
     if (areSame) {
         auto leafNode = std::make_unique<Node>();
         leafNode->isLeaf = true;
-        leafNode->predictedClass = value;
         leafNode->classProbabilities = proportions;
         return leafNode;
     }
@@ -112,23 +90,8 @@ std::unique_ptr<CART::Node> CART::buildTreeRecursive(const std::vector<int>& act
 
     //Base Case 2
     if (bestFeature == -1) {
-        std::unordered_map<std::string, int> frequencies;
-        for (auto i{0uz}; i < activeRows.size(); i++) {
-            frequencies[data.y[activeRows[i]]]++;
-        }
-
-        std::string mostCommon;
-        int maxFreq = -1;
-        for (const auto freq : frequencies) {
-            if (freq.second > maxFreq) {
-                mostCommon = freq.first;
-                maxFreq = freq.second;
-            }
-        }
-
         auto leafNode = std::make_unique<Node>();
         leafNode->isLeaf = true;
-        leafNode->predictedClass = mostCommon;
         leafNode->classProbabilities = proportions;
         return leafNode;
     }
@@ -216,31 +179,33 @@ void CART::getBestSplit(const std::vector<int>& activeRows, int& bestFeature, in
     }
 }
 
-std::vector<std::unordered_map<std::string, double> > CART::predictionProbabilities(const std::vector<std::vector<std::string> > &xSample) const {
-    std::vector<std::unordered_map<std::string, double>> classProbabilities;
+const CART::Node& CART::predictionNode(const std::vector<std::string>& sample) const {
+    const Node* currentNode = root.get();
+    while (!currentNode->isLeaf) {
+        int feature = currentNode->splitFeature;
+        const std::string& category = sample[feature];
 
-    for (auto i{0uz}; i < xSample.size(); i++) {
-        Node* currentNode = root.get();
-        const std::vector<std::string>& sample = xSample[i];
-
-        while (!currentNode->isLeaf) {
-            int feature = currentNode->splitFeature;
-            const std::string& category = sample[feature];
-
-            auto codeIt = featureValue[feature].find(category);
-            if (codeIt == featureValue[feature].end()) {
-                break;
-            }
-
-            if (codeIt->second == currentNode->splitValue) {
-                currentNode = currentNode->left.get();
-            } else {
-                currentNode = currentNode->right.get();
-            }
+        auto codeIt = featureValue[feature].find(category);
+        if (codeIt == featureValue[feature].end()) {
+            break;
         }
 
-        classProbabilities.push_back(currentNode->classProbabilities);
+        if (codeIt->second == currentNode->splitValue) {
+            currentNode = currentNode->left.get();
+        } else {
+            currentNode = currentNode->right.get();
+        }
     }
+    return *currentNode;
+}
 
-    return classProbabilities;
+std::vector<std::unordered_map<std::string, double>> CART::predictionProbabilities(
+    const std::vector<std::vector<std::string>>& rows) const {
+    validatePredictionInput(rows, root != nullptr, featureValue.size());
+    std::vector<std::unordered_map<std::string, double>> probabilities;
+    probabilities.reserve(rows.size());
+    for (const auto& row : rows) {
+        probabilities.push_back(predictionNode(row).classProbabilities);
+    }
+    return probabilities;
 }

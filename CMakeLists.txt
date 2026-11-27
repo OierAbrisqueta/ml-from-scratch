@@ -18,14 +18,14 @@ add_library(scratch_ml STATIC
         include/scratch_ml/evaluation/ConfusionMatrix.hpp
         src/evaluation/ConfusionMatrix.cpp
         include/scratch_ml/evaluation/ROCCurve.hpp
-        src/evaluation/ROCCurve.cpp)
+        src/evaluation/ROCCurve.cpp
+        src/core/matrix.cpp)
 
 target_include_directories(scratch_ml PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 add_executable(ml_runner tests/main.cpp
-        src/core/matrix.cpp
 )
 
 target_link_libraries(ml_runner PRIVATE scratch_ml)

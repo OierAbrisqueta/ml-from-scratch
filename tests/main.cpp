@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdexcept>
 #include <scratch_ml/supervised/ID3.hpp>
 #include <scratch_ml/supervised/CART.hpp>
 #include <scratch_ml/supervised/RandomForest.hpp>
@@ -48,7 +49,76 @@ static bool testConstantFeatureSplits() {
         && tree.predictionProbabilities({{"fixed"}}).at(0).at("yes") == 2.0 / 3.0;
 }
 
+template <typename Exception>
+static bool throwsException(auto operation) {
+    try {
+        operation();
+    } catch (const Exception&) {
+        return true;
+    }
+    return false;
+}
+
+static bool testClassifierContract(Classifier& classifier) {
+    if (!throwsException<std::logic_error>([&] { (void)classifier.predict({}); }) ||
+        !throwsException<std::logic_error>([&] { (void)classifier.predictionProbabilities({{"a"}}); }) ||
+        !throwsException<std::invalid_argument>([&] { classifier.fit({}, {}); }) ||
+        !throwsException<std::invalid_argument>([&] { classifier.fit({{"a"}}, {}); }) ||
+        !throwsException<std::invalid_argument>([&] { classifier.fit({{"a"}, {"a", "b"}}, {"yes", "no"}); })) {
+        return false;
+    }
+
+    classifier.fit({{"a"}, {"a"}, {"b"}}, {"yes", "yes", "no"});
+    if (!throwsException<std::invalid_argument>([&] { (void)classifier.predict({{"a"}, {}}); }) ||
+        !throwsException<std::invalid_argument>([&] { (void)classifier.predictionProbabilities({{"a", "b"}}); }) ||
+        !throwsException<std::invalid_argument>([&] { classifier.fit({}, {}); })) {
+        return false;
+    }
+
+    const auto probabilities = classifier.predictionProbabilities({{"unseen"}}).at(0);
+    const auto prediction = classifier.predict({{"unseen"}}).at(0);
+    const auto no = probabilities.find("no");
+    const double noProbability = no == probabilities.end() ? 0.0 : no->second;
+    const auto expected = probabilities.at("yes") > noProbability ? "yes" : "no";
+    return prediction == expected && classifier.predict({{"a"}}).at(0) == "yes"
+        && classifier.predict({}).empty() && classifier.predictionProbabilities({}).empty();
+}
+
+static bool testSeededForest() {
+    const std::vector<std::vector<std::string>> rows = {{"a", "0"}, {"a", "1"}, {"b", "0"}, {"b", "1"}};
+    const std::vector<std::string> labels = {"no", "yes", "yes", "no"};
+    RandomForest forest(16, 1, 0);
+    RandomForest secondForest(16, 1, 0);
+    forest.fit(rows, labels);
+    secondForest.fit(rows, labels);
+    const auto probabilities = forest.predictionProbabilities(rows);
+    if (probabilities != secondForest.predictionProbabilities(rows)) {
+        return false;
+    }
+
+    forest.fit(rows, labels);
+    return probabilities == forest.predictionProbabilities(rows)
+        && throwsException<std::invalid_argument>([] { RandomForest invalid(0, 1); });
+}
+
 int main(void) {
+    ID3 id3;
+    CART cart;
+    RandomForest forest(32, 1, 42);
+    if (!testClassifierContract(id3) || !testClassifierContract(cart) ||
+        !testClassifierContract(forest) || !testSeededForest()) {
+        std::cerr << "Classifier contract regression\n";
+        return 1;
+    }
+    for (Classifier* tree : {static_cast<Classifier*>(&id3), static_cast<Classifier*>(&cart)}) {
+        tree->fit({{"a"}, {"b"}}, {"yes", "no"});
+        if (tree->predict({{"unseen"}}).at(0) != "no" ||
+            tree->predictionProbabilities({{"unseen"}}).at(0).at("yes") != 0.5) {
+            std::cerr << "Unseen category fallback regression\n";
+            return 1;
+        }
+    }
+
     if (!testConstantFeatureSplits()) {
         std::cerr << "Constant-feature split regression\n";
         return 1;
@@ -79,7 +149,7 @@ int main(void) {
         // Completely new combination (Wasn't trained with this combination)
         {"Sunny", "Cool", "Normal", "Strong"},
 
-        // Edge Case: Contains unseen category. Should return unknown.
+        // Edge Case: An unseen category uses the last reachable node.
         {"Rain", "Mild", "High", "Hurricane"},
 
         {"Sunny", "Hot", "High", "Weak"},

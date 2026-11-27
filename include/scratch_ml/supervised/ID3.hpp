@@ -18,9 +18,11 @@ private:
         bool isLeaf = false;
         int value = -1;
         std::unordered_map<int, std::unique_ptr<Node>> childrenNodes;
-        std::string predictedClass;
         std::unordered_map<std::string, double> classProbabilities;
     };
+
+    // Stop at the last reachable node when a category cannot be followed.
+    [[nodiscard]] const Node& predictionNode(const std::vector<std::string>& sample) const;
 
     DataSet data;
     std::unique_ptr<Node> root;

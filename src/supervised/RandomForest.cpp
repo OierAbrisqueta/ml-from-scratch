@@ -1,16 +1,19 @@
 #include <scratch_ml/supervised/RandomForest.hpp>
 #include <random>
 
-RandomForest::RandomForest(std::size_t numTrees, std::size_t numFeatures) {
-    this->maxFeatures = numFeatures;
-    this->numTrees = numTrees;
-    this->forest.reserve(this->numTrees);
+RandomForest::RandomForest(std::size_t numTrees, std::size_t numFeatures,
+                           std::optional<std::mt19937::result_type> seed)
+    : numTrees(numTrees), maxFeatures(numFeatures), seed(seed) {
+    if (numTrees == 0) {
+        throw std::invalid_argument("RandomForest requires at least one tree");
+    }
 }
 
 void RandomForest::fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) {
-    this->forest.clear();
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    validateTrainingInput(xTrain, yTrain);
+    std::vector<std::unique_ptr<CART>> newForest;
+    newForest.reserve(numTrees);
+    std::mt19937 gen(seed ? *seed : std::random_device{}());
     std::uniform_int_distribution<std::size_t> dist(0, xTrain.size() - 1);
 
     for (auto i{0uz}; i < this->numTrees; i++) {
@@ -32,43 +35,24 @@ void RandomForest::fit(const std::vector<std::vector<std::string>>& xTrain, cons
 
         auto tree = std::make_unique<CART>(maxFeatures, gen());
         tree->fit(tempX, tempY);
-        this->forest.push_back(std::move(tree));
+        newForest.push_back(std::move(tree));
     }
+    forest = std::move(newForest);
+    featureCount = xTrain.front().size();
 }
 
 std::vector<std::string> RandomForest::predict(const std::vector<std::vector<std::string>>& xTest) const {
-    std::vector<std::vector<std::string>> predictions;
-    predictions.reserve(this->numTrees);
-
-    for (auto i{0uz}; i < this->numTrees; i++) {
-        const std::unique_ptr<CART>& tree = this->forest[i];
-        std::vector<std::string> prediction = tree->predict(xTest);
-        predictions.push_back(std::move(prediction));
+    const auto probabilities = predictionProbabilities(xTest);
+    std::vector<std::string> predictions;
+    predictions.reserve(probabilities.size());
+    for (const auto& row : probabilities) {
+        predictions.push_back(mostProbableClass(row));
     }
-
-    std::vector<std::string> finalPredictions;
-    finalPredictions.reserve(predictions.front().size());
-    for (auto j{0uz}; j < xTest.size(); j++) {
-        std::unordered_map<std::string, int> frequencies;
-        for (auto i{0uz}; i < this->numTrees; i++) {
-            frequencies[predictions[i][j]]++;
-        }
-
-        int max = 0;
-        std::string maxString;
-        for (const auto& frequency : frequencies) {
-            if (frequency.second > max) {
-                max = frequency.second;
-                maxString = frequency.first;
-            }
-        }
-        finalPredictions.push_back(maxString);
-    }
-
-    return finalPredictions;
+    return predictions;
 }
 
 std::vector<std::unordered_map<std::string, double>> RandomForest::predictionProbabilities(const std::vector<std::vector<std::string> > &xSample) const {
+    validatePredictionInput(xSample, !forest.empty(), featureCount);
     std::vector<std::unordered_map<std::string, double>> result(xSample.size());
 
     for (const auto& tree : forest) {

@@ -5,6 +5,9 @@
 #include <numeric>
 
 void ID3::fit(const std::vector<std::vector<std::string>>& xTrain, const std::vector<std::string>& yTrain) {
+    validateTrainingInput(xTrain, yTrain);
+    root.reset();
+
     allClasses.clear();
     for (const std::string& s : yTrain) {
         this->allClasses.insert(s);
@@ -74,31 +77,14 @@ std::unique_ptr<ID3::Node> ID3::id3Recursive(const std::vector<int>& activeRows,
     if (isNode) {
         auto leafNode = std::make_unique<Node>();
         leafNode->isLeaf = true;
-        leafNode->predictedClass = firstLabel;
         leafNode->classProbabilities = proportions;
         return leafNode;
     }
 
     //Base Case 2
     if (availableFeatures.empty()) {
-        std::unordered_map<std::string, int> frequencies;
-        for (auto i{0uz}; i < activeRows.size(); i++) {
-            std::string current = data.y[activeRows[i]];
-            frequencies[current]++;
-        }
-
-        int maxFrequency = -1;
-        std::string mode;
-        for (const auto& entry : frequencies) {
-            if (entry.second > maxFrequency) {
-                maxFrequency = entry.second;
-                mode = entry.first;
-            }
-        }
-
         auto leafNode = std::make_unique<Node>();
         leafNode->isLeaf = true;
-        leafNode->predictedClass = mode;
         leafNode->classProbabilities = proportions;
         return leafNode;
     }
@@ -179,68 +165,44 @@ double ID3::getEntropy(const std::vector<int>& activeRows) {
     return entropy;
 }
 
-std::vector<std::string> ID3::predict(const std::vector<std::vector<std::string>>& xTrain) const {
+std::vector<std::string> ID3::predict(const std::vector<std::vector<std::string>>& rows) const {
+    validatePredictionInput(rows, root != nullptr, featureValue.size());
     std::vector<std::string> predictions;
-
-    for (auto i{0uz}; i < xTrain.size(); i++) {
-        Node* currentNode = root.get();
-        bool predictionFound = true;
-
-        while (!currentNode->isLeaf) {
-            int value = currentNode->value;
-            const std::string& prediction = xTrain[i][value];
-
-            if (!featureValue[value].contains(prediction)) {
-                predictionFound = false;
-                break;
-            }
-
-            int predictionValue = featureValue[value].at(prediction);
-            if (!currentNode->childrenNodes.contains(predictionValue)) {
-                predictionFound = false;
-                break;
-            }
-
-            currentNode = currentNode->childrenNodes.at(predictionValue).get();
-        }
-        if (predictionFound) {
-            predictions.push_back(currentNode->predictedClass);
-        } else {
-            predictions.push_back("Unknown");
-        }
-
+    predictions.reserve(rows.size());
+    for (const auto& row : rows) {
+        predictions.push_back(mostProbableClass(predictionNode(row).classProbabilities));
     }
-
     return predictions;
 }
 
-//Calculates the probability of each class
-std::vector<std::unordered_map<std::string, double>> ID3::predictionProbabilities(const std::vector<std::vector<std::string> > &xSample) const {
-    std::vector<std::unordered_map<std::string, double>> classProbabilities;
+const ID3::Node& ID3::predictionNode(const std::vector<std::string>& sample) const {
+    const Node* currentNode = root.get();
+    while (!currentNode->isLeaf) {
+        int feature = currentNode->value;
+        const std::string& category = sample[feature];
 
-    for (auto i{0uz}; i < xSample.size(); i++) {
-        Node* currentNode = root.get();
-        const std::vector<std::string>& sample = xSample[i];
-
-        while (!currentNode->isLeaf) {
-            int feature = currentNode->value;
-            const std::string& category = sample[feature];
-
-            auto codeIt = featureValue[feature].find(category);
-            if (codeIt == featureValue[feature].end()) {
-                break;
-            }
-
-            auto childIt = currentNode->childrenNodes.find(codeIt->second);
-            if (childIt == currentNode->childrenNodes.end()) {
-                break;
-            }
-
-            currentNode = childIt->second.get();
+        auto codeIt = featureValue[feature].find(category);
+        if (codeIt == featureValue[feature].end()) {
+            break;
         }
 
-        classProbabilities.push_back(currentNode->classProbabilities);
-    }
+        auto childIt = currentNode->childrenNodes.find(codeIt->second);
+        if (childIt == currentNode->childrenNodes.end()) {
+            break;
+        }
 
-    return classProbabilities;
+        currentNode = childIt->second.get();
+    }
+    return *currentNode;
+}
+
+std::vector<std::unordered_map<std::string, double>> ID3::predictionProbabilities(
+    const std::vector<std::vector<std::string>>& rows) const {
+    validatePredictionInput(rows, root != nullptr, featureValue.size());
+    std::vector<std::unordered_map<std::string, double>> probabilities;
+    probabilities.reserve(rows.size());
+    for (const auto& row : rows) {
+        probabilities.push_back(predictionNode(row).classProbabilities);
+    }
+    return probabilities;
 }

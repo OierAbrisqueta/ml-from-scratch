@@ -22,12 +22,14 @@ private:
         bool isLeaf = false;
         int splitFeature = -1;
         int splitValue = -1;
-        std::string predictedClass;
         std::unordered_map<std::string, double> classProbabilities;
 
         std::unique_ptr<Node> left;
         std::unique_ptr<Node> right;
     };
+
+    // Stop at the last reachable node when a category cannot be followed.
+    [[nodiscard]] const Node& predictionNode(const std::vector<std::string>& sample) const;
 
     DataSet data;
     std::size_t maxFeatures = 0;
